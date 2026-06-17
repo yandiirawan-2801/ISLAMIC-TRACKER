@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="My Tracker" />
+<title>Islamic Daily Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: #0f1510;
+    color: #e8e0d0;
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  #setup-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  #setup-screen h1 { font-size: 22px; color: #c8a84b; margin-bottom: 8px; font-weight: 600; }
+  #setup-screen p { font-size: 13px; color: #6a9a78; line-height: 1.6; text-align: center; margin-bottom: 24px; }
+
+  .setup-step {
+    background: #141e17;
+    border: 1px solid #1e3020;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .setup-step h3 { font-size: 13px; color: #c8a84b; margin-bottom: 6px; }
+  .setup-step p { font-size: 12px; color: #6a9a78; text-align: left; line-height: 1.6; }
+  .setup-step code { background: #0a1208; color: #70e0a0; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+
+  #url-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 14px;
+    background: #141e17;
+    border: 1px solid #2d8c5e;
+    border-radius: 12px;
+    color: #e8e0d0;
+    font-size: 13px;
+    margin-bottom: 12px;
+    outline: none;
+  }
+  #url-input::placeholder { color: #3a5a42; }
+
+  .btn-primary {
+    width: 100%;
+    max-width: 400px;
+    padding: 14px;
+    background: linear-gradient(135deg, #1a6b4a, #2d8c5e);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* APP */
+  #app { display: none; max-width: 480px; margin: 0 auto; }
+
+  header {
+    background: linear-gradient(160deg, #0d2018, #122a1a);
+    padding: 52px 20px 0;
+    border-bottom: 1px solid #1e3a28;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .bismillah { font-size: 20px; color: #c8a84b; font-family: Georgia, serif; letter-spacing: 1px; margin-bottom: 3px; }
+  .hijri { font-size: 11px; color: #6a9a78; text-transform: uppercase; letter-spacing: 1px; }
+
+  .streak-badge {
+    display: flex; flex-direction: column; align-items: center;
+    background: #1a3020; border: 1px solid #2d5a3a;
+    border-radius: 12px; padding: 8px 14px;
+  }
+  .streak-num { font-size: 22px; font-weight: 700; color: #f0c040; line-height: 1; }
+  .streak-lbl { font-size: 10px; color: #6a9a78; text-transform: uppercase; }
+
+  .date-label { font-size: 14px; color: #a0c0a8; margin: 14px 0 10px; }
+
+  .progress-wrap { margin-bottom: 12px; }
+  .progress-bg { height: 6px; background: #1a3020; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #1a6b4a, #c8a84b); border-radius: 3px; transition: width 0.4s; }
+  .progress-txt { font-size: 12px; color: #6a9a78; text-align: right; }
+
+  .sync-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; min-height: 18px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sync-txt { font-size: 11px; color: #6a9a78; }
+
+  nav { display: flex; }
+  nav button {
+    flex: 1; padding: 10px 0; background: transparent; border: none;
+    border-bottom: 2px solid transparent; color: #6a9a78;
+    font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  nav button.active { color: #c8a84b; border-bottom: 2px solid #c8a84b; }
+
+  main { padding: 16px 16px 60px; }
+
+  .complete-msg {
+    background: linear-gradient(135deg, #0d2a18, #1a3a20);
+    border: 1px solid #2d6a3a; border-radius: 12px;
+    padding: 14px 16px; font-size: 14px; color: #c8a84b;
+    text-align: center; margin-bottom: 16px; line-height: 1.5;
+  }
+
+  .cat-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: #6a9a78; text-transform: uppercase;
+    letter-spacing: 1.2px; font-weight: 600; margin: 16px 0 8px 4px;
+  }
+  .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .habit-btn {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    background: #141e17; border: 1px solid #1e3020; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; cursor: pointer; text-align: left;
+    transition: opacity 0.2s;
+  }
+  .habit-btn.done { background: #0d1e12; border-color: #1a4a28; opacity: 0.82; }
+  .habit-left { display: flex; align-items: center; gap: 12px; }
+  .habit-emoji { font-size: 20px; flex-shrink: 0; }
+  .habit-name { font-size: 15px; color: #d8d0c0; font-weight: 500; margin-bottom: 2px; }
+  .habit-btn.done .habit-name { color: #2d8c5e; text-decoration: line-through; }
+  .habit-desc { font-size: 11px; color: #5a7a62; }
+  .check-box {
+    width: 26px; height: 26px; border-radius: 8px; border: 2px solid #2a4030;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .check-box.done { background: #1a6b4a; border-color: #2d8c5e; }
+
+  .footer { text-align: center; margin-top: 24px; padding: 20px 16px; border-top: 1px solid #1a2a1e; }
+  .footer-q { font-size: 13px; color: #8aaa92; font-style: italic; line-height: 1.6; }
+  .footer-s { font-size: 11px; color: #4a6a52; margin-top: 6px; }
+
+  /* History */
+  .hist-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #141e17; border: 1px solid #1e3020; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px;
+  }
+  .hist-date { font-size: 13px; color: #a0b8a8; margin-bottom: 6px; }
+  .mini-row { display: flex; gap: 3px; flex-wrap: wrap; }
+  .mini-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .hist-pct { font-size: 20px; font-weight: 700; }
+  .hist-count { font-size: 11px; color: #4a6a52; }
+  .empty { color: #4a6a52; font-size: 13px; text-align: center; padding: 24px 0; font-style: italic; }
+
+  /* Toast */
+  #toast {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    padding: 8px 20px; border-radius: 20px; border: 1px solid;
+    font-size: 13px; font-weight: 600; z-index: 999;
+    white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    opacity: 0; transition: opacity 0.2s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok { background: #0d2a18; border-color: #1a6b4a; color: #70e0a0; }
+  #toast.err { background: #3a1010; border-color: #8a2020; color: #e07070; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <h1>🌙 Islamic Daily Tracker</h1>
+  <p>Connect your Google Sheet to sync across all your devices automatically.</p>
+
+  <div class="setup-step">
+    <h3>Step 1 — Create the backend</h3>
+    <p>Go to <code>script.google.com</code> → New Project → paste the <code>islamic-tracker-backend.gs</code> code → Save</p>
+  </div>
+  <div class="setup-step">
+    <h3>Step 2 — Deploy it</h3>
+    <p>Click <strong>Deploy → New deployment</strong> → Type: <code>Web app</code> → Execute as: <code>Me</code> → Who has access: <code>Anyone</code> → Deploy → Authorize → Copy the Web App URL</p>
+  </div>
+  <div class="setup-step">
+    <h3>Step 3 — Paste URL below</h3>
+    <p>Paste your Web App URL here and tap Connect. Bookmark this page on all your devices.</p>
+  </div>
+
+  <input id="url-input" type="url" placeholder="https://script.google.com/macros/s/…/exec" />
+  <button class="btn-primary" onclick="connect()">Connect & Open Tracker</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="toast"></div>
+
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
+        <div class="hijri">Muharram 1447 AH</div>
+      </div>
+      <div class="streak-badge" id="streak-badge" style="display:none">
+        <span style="font-size:18px">🔥</span>
+        <span class="streak-num" id="streak-num">0</span>
+        <span class="streak-lbl">day streak</span>
+      </div>
+    </div>
+    <div class="date-label" id="date-label"></div>
+    <div class="progress-wrap">
+      <div class="progress-bg"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-txt" id="progress-txt">0 / 14 — 0%</div>
+    </div>
+    <div class="sync-row">
+      <div class="sync-dot" id="sync-dot" style="background:#6a9a78"></div>
+      <span class="sync-txt" id="sync-txt">Loading…</span>
+    </div>
+    <nav>
+      <button class="active" onclick="switchView('today', this)">Today</button>
+      <button onclick="switchView('history', this)">History</button>
+    </nav>
+  </header>
+
+  <main id="main"></main>
+</div>
+
+<script>
+const HABITS = [
+  { id:"fajr",           cat:"salah",     label:"Fajr",                emoji:"🌙", desc:"On time" },
+  { id:"dhuhr",          cat:"salah",     label:"Dhuhr",               emoji:"☀️", desc:"On time" },
+  { id:"asr",            cat:"salah",     label:"Asr",                 emoji:"🌤️", desc:"On time" },
+  { id:"maghrib",        cat:"salah",     label:"Maghrib",             emoji:"🌆", desc:"On time" },
+  { id:"isha",           cat:"salah",     label:"Isha",                emoji:"🌃", desc:"On time" },
+  { id:"dhuha",          cat:"prayer",    label:"Dhuha Prayer",        emoji:"🌅", desc:"Min. 2 raka'at" },
+  { id:"quran",          cat:"quran",     label:"Quran",               emoji:"📖", desc:"At least 1 page" },
+  { id:"morning_adhkar", cat:"dhikr",     label:"Morning Adhkar",      emoji:"🤲", desc:"Incl. Sayyidul Istighfar" },
+  { id:"evening_adhkar", cat:"dhikr",     label:"Evening Adhkar",      emoji:"🤲", desc:"Incl. Sayyidul Istighfar" },
+  { id:"istighfar",      cat:"dhikr",     label:"Istighfar 100x",      emoji:"📿", desc:"Astaghfirullah × 100" },
+  { id:"gaze",           cat:"character", label:"Lower Gaze",          emoji:"👁️", desc:"Mindful of what I watch" },
+  { id:"sleep",          cat:"lifestyle", label:"Sleep Before Midnight",emoji:"🌙", desc:"Protect Fajr" },
+  { id:"movement",       cat:"lifestyle", label:"Physical Movement",   emoji:"🏃", desc:"30 min activity" },
+  { id:"sadaqah",        cat:"character", label:"Sadaqah / Good Deed", emoji:"💛", desc:"Give or do something good" },
+];
+
+const CATS = {
+  salah:     { label:"5 Daily Prayers",   color:"#1a6b4a" },
+  prayer:    { label:"Sunnah Prayer",     color:"#2d8c5e" },
+  quran:     { label:"Quran",             color:"#c47c1a" },
+  dhikr:     { label:"Dhikr & Istighfar", color:"#7c4a9e" },
+  character: { label:"Character",         color:"#1a5c8a" },
+  lifestyle: { label:"Lifestyle",         color:"#5a6a3a" },
+};
+
+let SCRIPT_URL = "";
+let records = {};
+let currentView = "today";
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function dateLabel(str) {
+  return new Date(str + "T00:00:00").toLocaleDateString("en-US", {
+    weekday:"long", day:"numeric", month:"long", year:"numeric"
+  });
+}
+
+// ── Setup ──────────────────────────────────────────────────────────────────
+function connect() {
+  const url = document.getElementById("url-input").value.trim();
+  if (!url.startsWith("https://script.google.com")) {
+    alert("Please paste a valid Google Apps Script Web App URL.");
+    return;
+  }
+  localStorage.setItem("tracker_script_url", url);
+  SCRIPT_URL = url;
+  startApp();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+window.onload = function() {
+  const saved = localStorage.getItem("tracker_script_url");
+  if (saved) { SCRIPT_URL = saved; startApp(); }
+};
+
+async function startApp() {
+  document.getElementById("setup-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  document.getElementById("date-label").textContent = dateLabel(todayKey());
+  setSyncStatus("loading");
+  await loadFromSheet();
+  renderView();
+}
+
+// ── Sync status ────────────────────────────────────────────────────────────
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById("sync-dot");
+  const txt = document.getElementById("sync-txt");
+  if (state === "loading") { dot.style.background = "#c8a84b"; txt.textContent = "Syncing…"; }
+  else if (state === "ok")  { dot.style.background = "#2d8c5e"; txt.textContent = msg || "Synced ✓"; }
+  else if (state === "err") { dot.style.background = "#8a2020"; txt.textContent = msg || "Sync error"; }
+}
+
+// ── Sheet API ──────────────────────────────────────────────────────────────
+async function loadFromSheet() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=load`);
+    const data = await res.json();
+    if (data.ok) {
+      records = data.records || {};
+      // Merge with local cache in case of offline edits
+      const local = JSON.parse(localStorage.getItem("tracker_local") || "{}");
+      Object.assign(records, local);
+      localStorage.setItem("tracker_local", JSON.stringify(records));
+      setSyncStatus("ok", "Synced ✓");
+    } else throw new Error(data.error);
+  } catch (e) {
+    // Fallback to local cache
+    records = JSON.parse(localStorage.getItem("tracker_local") || "{}");
+    setSyncStatus("err", "Offline — local data");
+  }
+}
+
+async function saveDayToSheet(date, dayData) {
+  setSyncStatus("loading");
+  // Always save to local first
+  const local = JSON.parse(localStorage.getItem("tracker_local") || "{}");
+  local[date] = dayData;
+  localStorage.setItem("tracker_local", JSON.stringify(local));
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action:"save", date, data: dayData }),
+    });
+    const result = await res.json();
+    if (result.ok) setSyncStatus("ok", "Saved & synced ✓");
+    else throw new Error(result.error);
+  } catch (e) {
+    setSyncStatus("err", "Saved locally (offline)");
+  }
+}
+
+// ── Toggle ─────────────────────────────────────────────────────────────────
+async function toggle(habitId) {
+  const today = todayKey();
+  const current = records[today] || {};
+  current[habitId] = !current[habitId];
+  records[today] = current;
+  renderView();
+  await saveDayToSheet(today, current);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function switchView(v, btn) {
+  currentView = v;
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderView();
+}
+
+function renderView() {
+  updateHeader();
+  if (currentView === "today") renderToday();
+  else renderHistory();
+}
+
+function updateHeader() {
+  const today = todayKey();
+  const todayData = records[today] || {};
+  const done = HABITS.filter(h => todayData[h.id]).length;
+  const pct = Math.round((done / HABITS.length) * 100);
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("progress-txt").textContent = `${done} / ${HABITS.length} — ${pct}%`;
+
+  // Streak
+  let streak = 0;
+  const d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const dd = records[key];
+    if (!dd || HABITS.filter(h => dd[h.id]).length < HABITS.length) break;
+    streak++; d.setDate(d.getDate() - 1);
+  }
+  const sb = document.getElementById("streak-badge");
+  if (streak > 0) { sb.style.display = "flex"; document.getElementById("streak-num").textContent = streak; }
+  else sb.style.display = "none";
+}
+
+function renderToday() {
+  const today = todayKey();
+  const todayData = records[today] || {};
+  const done = HABITS.filter(h => todayData[h.id]).length;
+  const pct = Math.round((done / HABITS.length) * 100);
+
+  // Group habits by category
+  const grouped = {};
+  HABITS.forEach(h => { if (!grouped[h.cat]) grouped[h.cat] = []; grouped[h.cat].push(h); });
+
+  let html = "";
+  if (pct === 100) html += `<div class="complete-msg">🌟 MashaAllah! Full day completed! May Allah accept it from you.</div>`;
+
+  for (const [cat, habits] of Object.entries(grouped)) {
+    html += `<div class="cat-label"><span class="cat-dot" style="background:${CATS[cat].color}"></span>${CATS[cat].label}</div>`;
+    habits.forEach(h => {
+      const isDone = !!todayData[h.id];
+      html += `
+        <button class="habit-btn ${isDone ? 'done' : ''}" onclick="toggle('${h.id}')">
+          <div class="habit-left">
+            <span class="habit-emoji">${h.emoji}</span>
+            <div>
+              <div class="habit-name">${h.label}</div>
+              <div class="habit-desc">${h.desc}</div>
+            </div>
+          </div>
+          <div class="check-box ${isDone ? 'done' : ''}">${isDone ? '✓' : ''}</div>
+        </button>`;
+    });
+  }
+
+  html += `<div class="footer">
+    <p class="footer-q">"The most beloved deeds to Allah are those done consistently, even if small."</p>
+    <p class="footer-s">— Prophet Muhammad ﷺ (Sahih Bukhari)</p>
+  </div>`;
+
+  document.getElementById("main").innerHTML = html;
+}
+
+function renderHistory() {
+  const today = todayKey();
+  const days = Object.keys(records).filter(d => d !== today).sort((a,b) => b.localeCompare(a)).slice(0,30);
+
+  let html = `<div class="cat-label"><span class="cat-dot" style="background:#7c4a9e"></span>Past 30 Days</div>`;
+
+  if (!days.length) {
+    html += `<div class="empty">No history yet — complete today's habits to begin!</div>`;
+  } else {
+    days.forEach(day => {
+      const data = records[day] || {};
+      const done = HABITS.filter(h => data[h.id]).length;
+      const pct = Math.round((done / HABITS.length) * 100);
+      const full = done === HABITS.length;
+      const pctColor = full ? "#f0c040" : pct >= 70 ? "#2d8c5e" : "#666";
+      const dots = HABITS.map(h =>
+        `<span class="mini-dot" style="background:${data[h.id] ? '#2d8c5e' : '#222'}" title="${h.label}"></span>`
+      ).join("");
+      html += `
+        <div class="hist-row">
+          <div>
+            <div class="hist-date">${dateLabel(day)}</div>
+            <div class="mini-row">${dots}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="hist-pct" style="color:${pctColor}">${pct}%</div>
+            <div class="hist-count">${done}/${HABITS.length}</div>
+            ${full ? '<div>🌟</div>' : ''}
+          </div>
+        </div>`;
+    });
+  }
+
+  document.getElementById("main").innerHTML = html;
+}
+</script>
+</body>
+</html>
